@@ -1,0 +1,28 @@
+name: Deploy to Salesforce on Merge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install -g @salesforce/cli
+          sf --version
+
+      - name: Authenticate to Salesforce Org
+        run: |
+          echo "${{ secrets.SFDX_AUTH_URL }}" > ./sfdx_auth_url.txt
+          sf org login sfdx-url --sfdx-url-file ./sfdx_auth_url.txt --set-default
+          rm ./sfdx_auth_url.txt
+
+      - name: Deploy Metadata and Apex Classes
+        run: |
+          sf project deploy start --no-prompt
