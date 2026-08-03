@@ -12,11 +12,15 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Install Salesforce CLI (Stable Standalone)
+      - name: Set up Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Salesforce CLI (via npm)
         run: |
-          mkdir sfdx-cli
-          wget -qO- https://salesforce.com | tar xz -C sfdx-cli --strip-components 1
-          echo "$(pwd)/sfdx-cli/bin" >> $GITHUB_PATH
+          npm install --global sfdx-cli
+          echo "$(npm bin -g)" >> $GITHUB_PATH
 
       - name: Authenticate to Salesforce Org
         run: |
