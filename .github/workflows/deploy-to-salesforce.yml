@@ -16,9 +16,7 @@ jobs:
         run: |
           mkdir sfdx-cli
           wget -qO- https://salesforce.com | tar xz -C sfdx-cli --strip-components 1
-          export PATH=$(pwd)/sfdx-cli/bin:$PATH
           echo "$(pwd)/sfdx-cli/bin" >> $GITHUB_PATH
-          sf --version
 
       - name: Authenticate to Salesforce Org
         run: |
