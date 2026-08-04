@@ -17,17 +17,39 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install Salesforce CLI (via npm)
+      - name: Install Salesforce CLI
         run: |
-          npm install --global sfdx-cli
+          # install the official Salesforce CLI which provides 'sf'
+          npm install --global @salesforce/cli
           echo "$(npm bin -g)" >> $GITHUB_PATH
 
-      - name: Authenticate to Salesforce Org
+      - name: Verify Salesforce CLI installation
         run: |
-          echo "${{ secrets.SFDX_AUTH_URL }}" > ./sfdx_auth_url.txt
-          sf org login sfdx-url --sfdx-url-file ./sfdx_auth_url.txt --set-default
+          echo "Salesforce CLI location: $(which sf || which sfdx || echo 'not found')"
+          # show version; fail the step if neither exists
+          if command -v sf >/dev/null 2>&1; then sf --version; elif command -v sfdx >/dev/null 2>&1; then sfdx --version; else echo "Salesforce CLI not installed"; exit 1; fi
+
+      - name: Authenticate to Salesforce Org
+        env:
+          SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
+        run: |
+          # guard against missing secret
+          if [ -z "$SFDX_AUTH_URL" ]; then
+            echo "ERROR: secrets.SFDX_AUTH_URL is not set"; exit 1
+          fi
+          echo "$SFDX_AUTH_URL" > ./sfdx_auth_url.txt
+          # prefer 'sf', fallback to 'sfdx' if necessary
+          if command -v sf >/dev/null 2>&1; then
+            sf org login sfdx-url --sfdx-url-file ./sfdx_auth_url.txt --set-default
+          else
+            sfdx auth:sfdxurl:store --sfdxurlfile ./sfdx_auth_url.txt --setdefaultusername
+          fi
           rm ./sfdx_auth_url.txt
 
       - name: Deploy Metadata and Apex Classes
         run: |
-          sf project deploy start --no-prompt
+          if command -v sf >/dev/null 2>&1; then
+            sf project deploy start --no-prompt
+          else
+            sfdx force:mdapi:deploy -d force-app -w -1
+          fi
